@@ -1,15 +1,18 @@
 package quotebot
 
 import scala.concurrent.duration._
-
+import scala.util.Properties
 import io.gatling.core.Predef._
 import io.gatling.http.Predef._
 import io.gatling.jdbc.Predef._
 
 class RecordedSimulation extends Simulation {
 
+	var quoteBaseURL = System.getenv("quoteBaseURL")
+	quoteBaseURL = "http://"+quoteBaseURL+":8080"
+	print("BASE URL :"+quoteBaseURL)
 	val httpProtocol = http
-		.baseUrl("http://localhost:8080")
+		.baseUrl(quoteBaseURL)
 		.proxy(Proxy("localhost", 4200).httpsPort(443))
 		.inferHtmlResources(BlackList(), WhiteList())
 		.acceptHeader("*/*")
@@ -46,10 +49,7 @@ class RecordedSimulation extends Simulation {
 			.headers(headers_0)
 			.body(RawFileBody("../resources/bodies/sell_rh.json"))) // sell 5 RH stocks
 		.pause(20)
-		.exec(http("request_5")
-			.post("/api/order")
-			.headers(headers_0)
-			.body(RawFileBody("default1/recordedsimulation/0005_request.json")))
-
-	setUp(scn.inject(atOnceUsers(1))).protocols(httpProtocol)
+	setUp(scn.inject(
+		constantUsersPerSec(20) during(15 seconds)
+		)).protocols(httpProtocol)
 }
